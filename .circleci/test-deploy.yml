@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  <orb-name>: <namespace>/<orb-name>@dev:<<pipeline.git.revision>>
+  circleci-cancel-redundant: moneyforward/circleci-cancel-redundant@dev:<<pipeline.git.revision>>
   orb-tools: circleci/orb-tools@11.1
 
 filters: &filters
@@ -16,7 +16,17 @@ jobs:
     steps:
       - checkout
       # Run your orb's commands to validate them.
-      - <orb-name>/greet
+      - circleci-cancel-redundant/cancel:
+          circle_api_key: $CIRCLE_TOKEN
+          default_branch: main
+          pipeline_id: << pipeline.id >>
+      - run:
+          name: Sleep and ehco
+          command: |
+            echo "Waking up..."
+            sleep 5
+            echo "Hello world!"
+
 workflows:
   test-deploy:
     jobs:
@@ -26,13 +36,13 @@ workflows:
       - orb-tools/pack:
           filters: *filters
       - orb-tools/publish:
-          orb-name: <namespace>/<orb-name>
+          orb-name: moneyforward/circleci-cancel-redundant
           vcs-type: << pipeline.project.type >>
           pub-type: production
           requires:
             - orb-tools/pack
             - command-tests
-          context: <publishing-context>
+          context: orb-publishing
           filters:
             branches:
               ignore: /.*/

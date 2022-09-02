@@ -21,7 +21,7 @@ jobs:
           default_branch: main
           pipeline_id: << pipeline.id >>
       - run:
-          name: Sleep and ehco
+          name: Sleep and echo
           command: |
             echo "Waking up..."
             sleep 5

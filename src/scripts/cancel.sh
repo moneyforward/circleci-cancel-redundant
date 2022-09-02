@@ -25,6 +25,8 @@ if [ -n "$PIPE_IDS" ]; then
   for PIPE_ID in "${PIPE_LIST[@]:1}" # Skip the first PIPE_ID, since it's the latest one
   do
     result=$(curl --header "Circle-Token: $CIRCLE_API_KEY" --request GET "https://circleci.com/api/v2/pipeline/${PIPE_ID}/workflow")
+
+    echo "$result"
     # Cancel every workflow
     for WF_NAME in $WF_NAMES
     do

@@ -1,0 +1,19 @@
+description: >
+  This command cancels duplicate workflow on the default branch using the CircleCI API.
+
+parameters:
+  circle_api_key:
+    type: string
+  default_branch:
+    default: main
+    type: string
+  pipeline_id:
+    type: string
+steps:
+  - run:
+      name: "Cancel duplicate workflow on default branch"
+      environment:
+        - CIRCLE_API_KEY: << parameters.circle_api_key >>
+        - DEFAULT_BRANCH: << parameters.default_branch >>
+        - PIPELINE_ID: << parameters.pipeline_id >>
+      command: <<include(scripts/cancel.sh)>>

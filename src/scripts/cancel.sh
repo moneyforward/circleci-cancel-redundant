@@ -10,21 +10,40 @@ CIRCLE_API_KEY=$(eval echo "$CIRCLE_API_KEY")
 # Get the name of the workflows in the pipeline
 WF_NAMES=$(curl --header "Circle-Token: $CIRCLE_API_KEY" --request GET \
   "https://circleci.com/api/v2/pipeline/${PIPELINE_ID}/workflow" | jq -r '.items[].name')
+
 echo "Workflow(s) in pipeline:"
 echo "$WF_NAMES"
 
+# Allow some time for other pipelines to run before fetching the list of pipeline IDs
+sleep 2
+
 ## Get the IDs of pipelines created with the the current CIRCLE_SHA1
-PIPE_IDS=$(curl --header "Circle-Token: $CIRCLE_API_KEY" --request GET \
-  "https://circleci.com/api/v2/project/gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/pipeline?branch=$CIRCLE_BRANCH" \
-  | jq -r --arg CIRCLE_SHA1 "${CIRCLE_SHA1}" \
+PIPE_API_RES=$(curl --header "Circle-Token: $CIRCLE_API_KEY" --request GET \
+  "https://circleci.com/api/v2/project/gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/pipeline?branch=$CIRCLE_BRANCH")
+
+if [ "$SKIP_ALL_PREVIOUS" = 1 ] ; then
+  PIPE_IDS=$(echo "$PIPE_API_RES" | jq -r \
+  ' .items[]|select(.state == "created").id')
+else
+  PIPE_IDS=$(echo "$PIPE_API_RES" | jq -r --arg CIRCLE_SHA1 "${CIRCLE_SHA1}" \
   ' .items[]|select(.state == "created" and .vcs.revision == $CIRCLE_SHA1).id')
+fi
+
+# CircleCI API will return at most 15 latest pipeline IDs
+echo "Pipeline IDs:"
+echo "$PIPE_IDS"
 
 ## Get the IDs of currently running/on_hold workflows with the same name except the current workflow ID
 if [ -n "$PIPE_IDS" ]; then
   mapfile -t PIPE_LIST <<< "$PIPE_IDS" # Convert space separated values into array
-  for PIPE_ID in "${PIPE_LIST[@]:1}" # Skip the first PIPE_ID, since it's the latest one
+
+  # ideally we only need to take 1 element after the first one, since it's the immediate previous build and we want to cancel that
+  # but we loop several pipelines (5) just in case some are still running, so that we can cancel it here
+  # Limited it to 5 to save on the number of API calls
+  for PIPE_ID in "${PIPE_LIST[@]:1:5}"
   do
     result=$(curl --header "Circle-Token: $CIRCLE_API_KEY" --request GET "https://circleci.com/api/v2/pipeline/${PIPE_ID}/workflow")
+
     # Cancel every workflow
     for WF_NAME in $WF_NAMES
     do

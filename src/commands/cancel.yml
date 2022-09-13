@@ -9,6 +9,10 @@ parameters:
     type: string
   pipeline_id:
     type: string
+  skip_all_previous:
+    description: Also cancel all previously still running builds, even with different git SHA
+    type: boolean
+    default: false
 steps:
   - run:
       name: "Cancel duplicate workflow on default branch"
@@ -16,4 +20,5 @@ steps:
         - CIRCLE_API_KEY: << parameters.circle_api_key >>
         - DEFAULT_BRANCH: << parameters.default_branch >>
         - PIPELINE_ID: << parameters.pipeline_id >>
+        - SKIP_ALL_PREVIOUS: << parameters.skip_all_previous >>
       command: <<include(scripts/cancel.sh)>>

@@ -14,6 +14,9 @@ WF_NAMES=$(curl --header "Circle-Token: $CIRCLE_API_KEY" --request GET \
 echo "Workflow(s) in pipeline:"
 echo "$WF_NAMES"
 
+# Allow some time for other pipelines to run before fetching the list of pipeline IDs
+sleep 2
+
 ## Get the IDs of pipelines created with the the current CIRCLE_SHA1
 PIPE_API_RES=$(curl --header "Circle-Token: $CIRCLE_API_KEY" --request GET \
   "https://circleci.com/api/v2/project/gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/pipeline?branch=$CIRCLE_BRANCH")

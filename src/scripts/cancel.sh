@@ -39,6 +39,7 @@ if [ -n "$PIPE_IDS" ]; then
 
   # ideally we only need to take 1 element after the first one, since it's the immediate previous build and we want to cancel that
   # but we loop several pipelines (5) just in case some are still running, so that we can cancel it here
+  # Limited it to 5 to save on the number of API calls
   for PIPE_ID in "${PIPE_LIST[@]:1:5}"
   do
     result=$(curl --header "Circle-Token: $CIRCLE_API_KEY" --request GET "https://circleci.com/api/v2/pipeline/${PIPE_ID}/workflow")

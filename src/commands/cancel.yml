@@ -17,7 +17,7 @@ steps:
   - run:
       name: Install packages
       command: |
-        apk add curl jq
+        sudo apt update && sudo apt install jq curl
   - run:
       name: "Cancel duplicate workflow on default branch"
       environment:

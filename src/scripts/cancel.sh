@@ -2,15 +2,15 @@
 
 # Update and install packages using apk on Alpine Linux
 if command -v apk &> /dev/null; then
-  sudo apk update && sudo apk add jq curl
+  apk update && apk add jq curl
 
 # Update and install packages using yum on CentOS
 elif command -v yum &> /dev/null; then
-  sudo yum update && sudo yum install jq curl
+  yum update && yum install jq curl
 
 # Update and install packages using apt on Debian-based systems
 elif command -v apt-get &> /dev/null; then
-  sudo apt update && sudo apt install jq curl
+  apt update && apt install jq curl
 
 # If none of the package managers are found
 else

@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# Update and install packages using apk on Alpine Linux
+if command -v apk &> /dev/null; then
+  sudo apk update && sudo apk add jq curl
+
+# Update and install packages using yum on CentOS
+elif command -v yum &> /dev/null; then
+  sudo yum update && sudo yum install jq curl
+
+# Update and install packages using apt on Debian-based systems
+elif command -v apt-get &> /dev/null; then
+  sudo apt update && sudo apt install jq curl
+
+# If none of the package managers are found
+else
+  echo "Unsupported package manager. Please install jq and curl before run this orb."
+fi
+
 if [ "$CIRCLE_BRANCH" != "$DEFAULT_BRANCH" ]; then
   echo 'Not on default branch, no need to manually cancel duplicate workflow'
   exit

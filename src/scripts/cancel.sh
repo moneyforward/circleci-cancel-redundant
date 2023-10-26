@@ -14,8 +14,7 @@ elif command -v apt-get &> /dev/null; then
 
 # If none of the package managers are found
 else
-  echo "Unsupported package manager"
-  exit
+  echo "Unsupported package manager. Please install jq and curl before run this orb."
 fi
 
 if [ "$CIRCLE_BRANCH" != "$DEFAULT_BRANCH" ]; then

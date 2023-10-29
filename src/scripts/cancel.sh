@@ -52,34 +52,49 @@ echo "$PIPE_IDS"
 
 ## Get the IDs of currently running/on_hold workflows with the same name except the current workflow ID
 if [ -n "$PIPE_IDS" ]; then
-  mapfile -t PIPE_LIST <<< "$PIPE_IDS" # Convert space separated values into array
-
-  # ideally we only need to take 1 element after the first one, since it's the immediate previous build and we want to cancel that
-  # but we loop several pipelines (5) just in case some are still running, so that we can cancel it here
-  # Limited it to 5 to save on the number of API calls
-  for PIPE_ID in "${PIPE_LIST[@]:1:5}"
+  PIPE_LIST=$(echo "$PIPE_IDS" | tr " " "\n")  # Convert space separated values into array
+  echo "The last 5 pipelines :"
+  # # ideally we only need to take 1 element after the first one, since it's the immediate previous build and we want to cancel that
+  # # but we loop several pipelines (5) just in case some are still running, so that we can cancel it here
+  # # Limited it to 5 to save on the number of API calls
+  i=0
+  for PIPE_ID in $PIPE_LIST
   do
-    result=$(curl --header "Circle-Token: $CIRCLE_API_KEY" --request GET "https://circleci.com/api/v2/pipeline/${PIPE_ID}/workflow")
+    if [ "$i" -eq 0 ]; then
+      if [ "${#PIPE_LIST[@]}" -eq 1 ]; then
+        exit
+      fi
+      i=$((i + 1))
+      continue
+    fi
+    if [ "$i" -lt 6 ]; then
+      echo "${PIPE_ID}"
+      result=$(curl --header "Circle-Token: $CIRCLE_API_KEY" --request GET "https://circleci.com/api/v2/pipeline/${PIPE_ID}/workflow")
 
-    # Cancel every workflow
-    for WF_NAME in $WF_NAMES
-    do
-      echo "$result" \
-      | jq -r \
-        --arg PIPELINE_ID "${PIPELINE_ID}" \
-        --arg WF_NAME "${WF_NAME}" \
-        '.items[]|select(.status == "on_hold" or .status == "running")|select(.name == $WF_NAME)|select(.pipeline_id != $PIPELINE_ID)|.id' \
-        >> WF_to_cancel.txt
-    done
+      # Cancel every workflow
+      for WF_NAME in $WF_NAMES
+      do
+        echo "$result" \
+        | jq -r \
+          --arg PIPELINE_ID "${PIPELINE_ID}" \
+          --arg WF_NAME "${WF_NAME}" \
+          '.items[]|select(.status == "on_hold" or .status == "running")|select(.name == $WF_NAME)|select(.pipeline_id != $PIPELINE_ID)|.id' \
+          >> WF_to_cancel.txt
+      done
+      i=$((i + 1))
+    else
+      break
+    fi
   done
 fi
 
 ## Cancel any currently running/on_hold workflow with the same name
 if [ -s WF_to_cancel.txt ]; then
   echo "Canceling the following workflow(s):"
-  cat WF_to_cancel.txt 
+  cat WF_to_cancel.txt
   while read -r WF_ID;
     do
+      echo "Canceling ${WF_ID}"
       curl --header "Circle-Token: $CIRCLE_API_KEY" --request POST https://circleci.com/api/v2/workflow/"$WF_ID"/cancel
     done < WF_to_cancel.txt
   ## Allowing some time to complete the cancellation
